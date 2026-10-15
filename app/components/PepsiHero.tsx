@@ -179,7 +179,7 @@ export default function PepsiHero() {
         <video
           ref={videoRef}
           className="pepsi-hero-video"
-          src="/videos/pepsi-banner.mp4"
+          src="/videos/pepsi-hero-video.mp4"
           muted
           playsInline
           preload="auto"
