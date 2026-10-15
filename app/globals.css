@@ -12,7 +12,7 @@ body {
 
 .pepsi-scroll-section {
   position: relative;
-  height: 300vh;
+  height: 420vh;
   background: #090a20;
 }
 
@@ -94,7 +94,7 @@ body {
 
 @media (max-width: 767px) {
   .pepsi-scroll-section {
-    height: 240vh;
+    height: 320vh;
   }
 
   .pepsi-hero-video {
@@ -597,4 +597,21 @@ body {
   100% {
     transform: translate(-35%, -55%) scale(1.25);
   }
+}
+
+/* Lenis smooth scrolling */
+html.lenis, html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
 }
