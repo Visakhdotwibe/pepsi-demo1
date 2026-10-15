@@ -20,9 +20,24 @@ export default function PepsiHero() {
 
     if (!section || !video) return;
 
-    // Damping factor: controls how smoothly the video glides to the target timestamp
-    // 0.08 provides silky smooth deceleration on mouse wheel steps without sluggish lag
-    const DAMPING = 0.08;
+    // Damping factor: 0.15 delivers responsive, fluid easing without sluggish lag or stepping
+    const DAMPING = 0.15;
+
+    const applySeek = (time: number) => {
+      if (!Number.isFinite(video.duration) || video.duration <= 0) return;
+      const safeMax = Math.max(0, video.duration - 0.04);
+      const clamped = Math.min(Math.max(time, 0), safeMax);
+
+      try {
+        if ("fastSeek" in video && typeof (video as any).fastSeek === "function") {
+          (video as any).fastSeek(clamped);
+        } else {
+          video.currentTime = clamped;
+        }
+      } catch {
+        // Fallback for temporary browser seek rejections
+      }
+    };
 
     const calculateTarget = () => {
       const rect = section.getBoundingClientRect();
@@ -33,8 +48,7 @@ export default function PepsiHero() {
       const scrolled = Math.min(Math.max(-rect.top, 0), scrollDistance);
       const progress = scrolled / scrollDistance;
 
-      // Keep target time within safe bounds (slightly before end to avoid 'ended' stall)
-      const maxSafeDuration = Math.max(0, video.duration - 0.02);
+      const maxSafeDuration = Math.max(0, video.duration - 0.04);
       targetTimeRef.current = Math.min(Math.max(progress * video.duration, 0), maxSafeDuration);
     };
 
@@ -53,19 +67,18 @@ export default function PepsiHero() {
       const target = targetTimeRef.current;
       currentTimeRef.current += (target - currentTimeRef.current) * factor;
 
-      // Snap once playhead is within 1 millisecond of the target
       if (Math.abs(target - currentTimeRef.current) < 0.001) {
         currentTimeRef.current = target;
       }
 
-      // Synchronize video currentTime without overwhelming the decoder pipeline
+      // Synchronize video playhead when decoder is ready
       if (video.duration && !video.seeking) {
-        if (Math.abs(video.currentTime - currentTimeRef.current) > 0.01) {
-          video.currentTime = currentTimeRef.current;
+        if (Math.abs(video.currentTime - currentTimeRef.current) > 0.005) {
+          applySeek(currentTimeRef.current);
         }
       }
 
-      // Smoothly fade out scroll prompt once scrolling begins
+      // Smoothly fade out scroll indicator as the user scrolls
       if (indicator && video.duration) {
         const progress = currentTimeRef.current / video.duration;
         const opacity = Math.max(0, 1 - progress * 6);
@@ -75,8 +88,9 @@ export default function PepsiHero() {
 
       const isStillEasing = Math.abs(target - currentTimeRef.current) >= 0.001;
       const isStillSeeking = video.seeking;
+      const needsSync = Math.abs(video.currentTime - currentTimeRef.current) > 0.005;
 
-      if (isStillEasing || isStillSeeking) {
+      if (isStillEasing || isStillSeeking || needsSync) {
         rafIdRef.current = requestAnimationFrame(render);
       } else {
         isLoopRunningRef.current = false;
@@ -105,10 +119,11 @@ export default function PepsiHero() {
     const onSeeked = () => {
       if (!video.duration) return;
 
-      // If the decoder just finished seeking and smoothed playhead moved ahead, seek to current playhead
-      if (Math.abs(video.currentTime - currentTimeRef.current) > 0.01) {
-        video.currentTime = currentTimeRef.current;
+      // When a seek completes, immediately catch up if the playhead moved ahead during the seek
+      if (Math.abs(video.currentTime - currentTimeRef.current) > 0.005) {
+        applySeek(currentTimeRef.current);
       }
+      startLoop();
     };
 
     const onVideoReady = () => {
@@ -118,16 +133,17 @@ export default function PepsiHero() {
       calculateTarget();
 
       currentTimeRef.current = targetTimeRef.current;
-      video.currentTime = targetTimeRef.current;
+      applySeek(targetTimeRef.current);
 
       startLoop();
     };
 
     // If metadata was already cached or loaded before effect ran
-    if (video.readyState >= 2) {
+    if (video.readyState >= 1) {
       onVideoReady();
     }
 
+    video.addEventListener("loadedmetadata", onVideoReady);
     video.addEventListener("loadeddata", onVideoReady);
     video.addEventListener("canplay", onVideoReady);
     video.addEventListener("seeked", onSeeked);
@@ -138,6 +154,7 @@ export default function PepsiHero() {
     return () => {
       cancelAnimationFrame(rafIdRef.current);
 
+      video.removeEventListener("loadedmetadata", onVideoReady);
       video.removeEventListener("loadeddata", onVideoReady);
       video.removeEventListener("canplay", onVideoReady);
       video.removeEventListener("seeked", onSeeked);
