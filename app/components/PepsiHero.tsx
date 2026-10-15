@@ -74,7 +74,7 @@ export default function PepsiHero() {
       }
 
       const isStillEasing = Math.abs(target - currentTimeRef.current) >= 0.001;
-      const isStillSeeking = video.seeking && Math.abs(video.currentTime - target) > 0.01;
+      const isStillSeeking = video.seeking;
 
       if (isStillEasing || isStillSeeking) {
         rafIdRef.current = requestAnimationFrame(render);
@@ -111,28 +111,37 @@ export default function PepsiHero() {
       }
     };
 
-    const onMetadataLoaded = () => {
+    const onVideoReady = () => {
+      if (!video.duration || !Number.isFinite(video.duration)) return;
+
       video.pause();
       calculateTarget();
+
       currentTimeRef.current = targetTimeRef.current;
       video.currentTime = targetTimeRef.current;
+
       startLoop();
     };
 
     // If metadata was already cached or loaded before effect ran
-    if (video.readyState >= 1) {
-      onMetadataLoaded();
+    if (video.readyState >= 2) {
+      onVideoReady();
     }
 
-    video.addEventListener("loadedmetadata", onMetadataLoaded);
+    video.addEventListener("loadeddata", onVideoReady);
+    video.addEventListener("canplay", onVideoReady);
     video.addEventListener("seeked", onSeeked);
+
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
 
     return () => {
       cancelAnimationFrame(rafIdRef.current);
-      video.removeEventListener("loadedmetadata", onMetadataLoaded);
+
+      video.removeEventListener("loadeddata", onVideoReady);
+      video.removeEventListener("canplay", onVideoReady);
       video.removeEventListener("seeked", onSeeked);
+
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
     };
@@ -144,7 +153,7 @@ export default function PepsiHero() {
         <video
           ref={videoRef}
           className="pepsi-hero-video"
-          src="/videos/pepsi-banner1.mp4"
+          src="/videos/pepsi-banner.mp4"
           muted
           playsInline
           preload="auto"
