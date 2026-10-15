@@ -9,7 +9,8 @@ export default function PepsiHero() {
 
   const targetTimeRef = useRef(0);
   const currentTimeRef = useRef(0);
-  const rafIdRef = useRef<number | null>(null);
+  const isLoopRunningRef = useRef(false);
+  const rafIdRef = useRef(0);
   const lastTimeRef = useRef(0);
 
   useEffect(() => {
@@ -19,101 +20,76 @@ export default function PepsiHero() {
 
     if (!section || !video) return;
 
-    const DAMPING = 0.12;
-    let disposed = false;
+    // Damping factor: controls how smoothly the video glides to the target timestamp
+    // 0.08 provides silky smooth deceleration on mouse wheel steps without sluggish lag
+    const DAMPING = 0.08;
 
     const calculateTarget = () => {
-      if (!Number.isFinite(video.duration) || video.duration <= 0) {
-        return;
-      }
-
       const rect = section.getBoundingClientRect();
       const scrollDistance = section.offsetHeight - window.innerHeight;
 
-      if (scrollDistance <= 0) {
-        targetTimeRef.current = 0;
-        return;
-      }
+      if (scrollDistance <= 0 || !video.duration) return;
 
-      const scrolled = Math.min(
-        Math.max(-rect.top, 0),
-        scrollDistance
-      );
-
+      const scrolled = Math.min(Math.max(-rect.top, 0), scrollDistance);
       const progress = scrolled / scrollDistance;
 
-      targetTimeRef.current =
-        progress * Math.max(0, video.duration - 0.05);
+      // Keep target time within safe bounds (slightly before end to avoid 'ended' stall)
+      const maxSafeDuration = Math.max(0, video.duration - 0.02);
+      targetTimeRef.current = Math.min(Math.max(progress * video.duration, 0), maxSafeDuration);
     };
 
     const render = (now: number) => {
-      if (disposed) return;
+      if (!lastTimeRef.current) {
+        lastTimeRef.current = now;
+      }
 
-      const delta = lastTimeRef.current
-        ? Math.min((now - lastTimeRef.current) / 16.67, 3)
-        : 1;
-
+      const deltaMs = now - lastTimeRef.current;
       lastTimeRef.current = now;
 
-      const factor = 1 - Math.pow(1 - DAMPING, delta);
+      // Frame-rate independent damping (calibrated to 60fps)
+      const dt = Math.min(deltaMs / (1000 / 60), 3);
+      const factor = 1 - Math.pow(1 - DAMPING, Math.max(dt, 0.1));
 
       const target = targetTimeRef.current;
+      currentTimeRef.current += (target - currentTimeRef.current) * factor;
 
-      currentTimeRef.current +=
-        (target - currentTimeRef.current) * factor;
-
-      if (Math.abs(target - currentTimeRef.current) < 0.005) {
+      // Snap once playhead is within 1 millisecond of the target
+      if (Math.abs(target - currentTimeRef.current) < 0.001) {
         currentTimeRef.current = target;
       }
 
-      // Do not issue another seek while the decoder is busy.
-      if (
-        video.readyState >= HTMLMediaElement.HAVE_METADATA &&
-        Number.isFinite(video.duration) &&
-        !video.seeking &&
-        Math.abs(video.currentTime - currentTimeRef.current) > 0.04
-      ) {
-        try {
-          video.currentTime = Math.min(
-            currentTimeRef.current,
-            Math.max(0, video.duration - 0.05)
-          );
-        } catch {
-          // The browser may temporarily reject a seek.
+      // Synchronize video currentTime without overwhelming the decoder pipeline
+      if (video.duration && !video.seeking) {
+        if (Math.abs(video.currentTime - currentTimeRef.current) > 0.01) {
+          video.currentTime = currentTimeRef.current;
         }
       }
 
-      if (indicator && video.duration > 0) {
+      // Smoothly fade out scroll prompt once scrolling begins
+      if (indicator && video.duration) {
         const progress = currentTimeRef.current / video.duration;
         const opacity = Math.max(0, 1 - progress * 6);
-
-        indicator.style.opacity = String(opacity);
-        indicator.style.pointerEvents =
-          opacity <= 0.01 ? "none" : "auto";
+        indicator.style.opacity = opacity.toFixed(3);
+        indicator.style.pointerEvents = opacity <= 0.01 ? "none" : "auto";
       }
 
-      const easing = Math.abs(
-        targetTimeRef.current - currentTimeRef.current
-      ) > 0.005;
+      const isStillEasing = Math.abs(target - currentTimeRef.current) >= 0.001;
+      const isStillSeeking = video.seeking && Math.abs(video.currentTime - target) > 0.01;
 
-      const needsSeek =
-        !video.seeking &&
-        Math.abs(video.currentTime - currentTimeRef.current) > 0.04;
-
-      // Keep rendering while easing, seeking, or waiting to catch up.
-      if (easing || video.seeking || needsSeek) {
+      if (isStillEasing || isStillSeeking) {
         rafIdRef.current = requestAnimationFrame(render);
       } else {
-        rafIdRef.current = null;
+        isLoopRunningRef.current = false;
         lastTimeRef.current = 0;
       }
     };
 
     const startLoop = () => {
-      if (disposed || rafIdRef.current !== null) return;
-
-      lastTimeRef.current = 0;
-      rafIdRef.current = requestAnimationFrame(render);
+      if (!isLoopRunningRef.current) {
+        isLoopRunningRef.current = true;
+        lastTimeRef.current = 0;
+        rafIdRef.current = requestAnimationFrame(render);
+      }
     };
 
     const onScroll = () => {
@@ -121,55 +97,44 @@ export default function PepsiHero() {
       startLoop();
     };
 
-    const onMetadataLoaded = () => {
-      if (!Number.isFinite(video.duration) || video.duration <= 0) {
-        return;
-      }
-
-      video.pause();
+    const onResize = () => {
       calculateTarget();
-
-      currentTimeRef.current = targetTimeRef.current;
-
-      try {
-        video.currentTime = targetTimeRef.current;
-      } catch {
-        // Wait for the browser to make the media seekable.
-      }
-
       startLoop();
     };
 
     const onSeeked = () => {
-      // A new scroll target may have arrived during the previous seek.
-      if (
-        Math.abs(targetTimeRef.current - currentTimeRef.current) > 0.005 ||
-        Math.abs(video.currentTime - currentTimeRef.current) > 0.04
-      ) {
-        startLoop();
+      if (!video.duration) return;
+
+      // If the decoder just finished seeking and smoothed playhead moved ahead, seek to current playhead
+      if (Math.abs(video.currentTime - currentTimeRef.current) > 0.01) {
+        video.currentTime = currentTimeRef.current;
       }
     };
+
+    const onMetadataLoaded = () => {
+      video.pause();
+      calculateTarget();
+      currentTimeRef.current = targetTimeRef.current;
+      video.currentTime = targetTimeRef.current;
+      startLoop();
+    };
+
+    // If metadata was already cached or loaded before effect ran
+    if (video.readyState >= 1) {
+      onMetadataLoaded();
+    }
 
     video.addEventListener("loadedmetadata", onMetadataLoaded);
     video.addEventListener("seeked", onSeeked);
     window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
-
-    if (video.readyState >= HTMLMediaElement.HAVE_METADATA) {
-      onMetadataLoaded();
-    }
+    window.addEventListener("resize", onResize);
 
     return () => {
-      disposed = true;
-
-      if (rafIdRef.current !== null) {
-        cancelAnimationFrame(rafIdRef.current);
-      }
-
+      cancelAnimationFrame(rafIdRef.current);
       video.removeEventListener("loadedmetadata", onMetadataLoaded);
       video.removeEventListener("seeked", onSeeked);
       window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("resize", onResize);
     };
   }, []);
 
@@ -179,7 +144,7 @@ export default function PepsiHero() {
         <video
           ref={videoRef}
           className="pepsi-hero-video"
-          src="/videos/pepsi-hero-video.mp4"
+          src="/videos/pepsi-banner.mp4"
           muted
           playsInline
           preload="auto"
