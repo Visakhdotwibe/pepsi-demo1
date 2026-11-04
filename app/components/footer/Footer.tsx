@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import "./footer.css";
 
 export default function Footer() {
     return (
@@ -8,7 +9,7 @@ export default function Footer() {
                 width: "100%",
                 background: "#000",
                 borderTop: "1px solid rgba(255,255,255,0.08)",
-                padding: "48px 0 24px",
+                padding: "70px 0 60px",
             }}>
 
             <div className="container">
