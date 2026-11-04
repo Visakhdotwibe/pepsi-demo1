@@ -1,4 +1,5 @@
 
+import Footer from "./components/footer/Footer";
 import Header from "./components/header/Header";
 import { HomeCont2 } from "./components/home-contn2/HomeCont2";
 import HomeCont1 from "./components/home-contnt1/HomeCont1";
@@ -19,7 +20,7 @@ export default function Home() {
         <ProductListHome />
         <HomeCont1 />
         <HomeCont2 />
-        <footer style={{ minHeight: "358px" }} />
+        <Footer />
       </main>
     </>
   );
