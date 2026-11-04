@@ -196,6 +196,8 @@ body {
   text-align: center;
   max-width: 100%;
   margin-inline: auto;
+  position: relative;
+  padding:60px;
 
 }
 
@@ -288,7 +290,24 @@ body {
     max-width: 255px;
     line-height: 1.625;
 }
-
+.product-list-wrapp .product-grid .prdt-btn {
+    color: #fff;
+    text-transform: uppercase;
+    background: #0000fe;
+    border-radius: 50px;
+    margin: 0 auto 0;
+    padding: 12px 24px;
+    font-family: PepsiFont;
+    font-size: 18px;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-block;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: fit-content;
+}
 
 
 

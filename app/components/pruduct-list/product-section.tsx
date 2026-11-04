@@ -6,6 +6,7 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import Link from "next/link";
 
 interface Product {
     id: number;
@@ -17,7 +18,7 @@ interface Product {
 const products: Product[] = [
     {
         id: 1, name: "Pepsi1", image: "/images/pepsi-can1.png",
-        desc: "Refreshing Cola with a Smooth Cherry Twist"
+        desc: "Refreshing Cola with a Smooth Cherry Twist",
     },
     {
         id: 2, name: "Pepsi2", image: "/images/pepsi-can2.png",
@@ -140,6 +141,7 @@ export default function ProductSection() {
                         <div className="product-cont">
                             <h4>{product.name}</h4>
                             <p>{product.desc}</p>
+                            <Link href="" className="prdt-btn">Find out more</Link>
                         </div>
                     </div>
                 ))}
