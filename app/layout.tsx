@@ -1,6 +1,50 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import PepsiFont from "next/font/local";
+import HelveticaFont from "next/font/local";
+
+const pepsifont = PepsiFont({
+  src : [
+    {
+      path: '../public/fonts/Pepsi-regular.woff',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Pepsi-shrink.woff',
+      weight: '700',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/Pepsi-wide.woff',
+      weight: '700',
+      style: 'normal',
+    }
+  ],
+  variable:"--font-pepsi",
+});
+
+const helveticafont = HelveticaFont({
+  src : [
+    {
+      path: '../public/fonts/HelveticaNeueRegular.woff',
+      weight: '400',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/HelveticaNeueMedium.woff',
+      weight: '600',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/HelveticaNeueBold.woff',
+      weight: '800',
+      style: 'normal',
+    }
+  ],
+  variable:"--font-helvetica",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

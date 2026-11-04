@@ -10,16 +10,35 @@ import { useGSAP } from "@gsap/react";
 interface Product {
     id: number;
     name: string;
+    desc: string;
     image: string;
 }
 
 const products: Product[] = [
-    { id: 1, name: "Pepsi1", image: "/images/pepsi-can1.png" },
-    { id: 2, name: "Pepsi2", image: "/images/pepsi-can2.png" },
-    { id: 3, name: "Pepsi3", image: "/images/pepsi-can3.png" },
-    { id: 4, name: "Pepsi4", image: "/images/pepsi-can4.png" },
-    { id: 5, name: "Pepsi5", image: "/images/pepsi-can5.png" },
-    { id: 6, name: "Pepsi6", image: "/images/pepsi-can6.png" },
+    {
+        id: 1, name: "Pepsi1", image: "/images/pepsi-can1.png",
+        desc: "Refreshing Cola with a Smooth Cherry Twist"
+    },
+    {
+        id: 2, name: "Pepsi2", image: "/images/pepsi-can2.png",
+        desc: "Moments Worth Savouring"
+    },
+    {
+        id: 3, name: "Pepsi3", image: "/images/pepsi-can3.png",
+        desc: "Zero Sugar , All the Pepsi Taste"
+    },
+    {
+        id: 4, name: "Pepsi4", image: "/images/pepsi-can4.png",
+        desc: "Refreshing Cola with a Smooth Cherry Twist"
+    },
+    {
+        id: 5, name: "Pepsi5", image: "/images/pepsi-can5.png",
+        desc: "Moments Worth Savouring"
+    },
+    {
+        id: 6, name: "Pepsi6", image: "/images/pepsi-can6.png",
+        desc: "Zero Sugar , All the Pepsi Taste"
+    },
 ];
 
 gsap.registerPlugin(ScrollTrigger, useGSAP);
@@ -103,7 +122,7 @@ export default function ProductSection() {
     );
 
     return (
-        <section ref={sectionRef} className="product-section">
+        <div ref={sectionRef} className="product-section">
             <div className="product-grid">
                 {products.map((product) => (
                     <div className="product-col1" key={product.id}>
@@ -120,10 +139,11 @@ export default function ProductSection() {
 
                         <div className="product-cont">
                             <h4>{product.name}</h4>
+                            <p>{product.desc}</p>
                         </div>
                     </div>
                 ))}
             </div>
-        </section>
+        </div>
     );
 }

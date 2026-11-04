@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 
 export default function PepsiHero() {
   const sectionRef = useRef<HTMLElement>(null);
@@ -182,16 +183,21 @@ export default function PepsiHero() {
           aria-label="Pepsi product pouring animation"
         />
 
-        <div className="pepsi-hero-content">
-          <p>INTRODUCING THE NEW</p>
-          <h1>Refresh Your World.</h1>
-          <p>Discover a new taste experience.</p>
+        <div className="hero-content-outer">
+
+          <div className="pepsi-hero-content">
+            <h1>That's <span>what </span><span>i like</span></h1>
+            <p>Big taste. Real refreshment. 3g prebiotic fiber and no artificial sweeteners.</p>
+            <Link href="" className="banner-btn">Shop now</Link>
+          </div>
+
         </div>
 
         <div className="scroll-indicator" ref={indicatorRef}>
-          <span>SCROLL TO EXPLORE</span>
-          <span className="scroll-arrow">↓</span>
-        </div>
+            <span>SCROLL TO EXPLORE</span>
+            <span className="scroll-arrow">↓</span>
+          </div>
+
       </div>
     </section>
   );
